@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プレミアム・ローグライト・ルーレット</title>
+    <style>
+        :root {
+            --bg-color: #1a1a2e;
+            --panel-color: #161623;
+            --accent-color: #e94560;
+            --text-color: #ffffff;
+            --green: #2ecc71;
+            --red: #e74c3c;
+            --black: #2c3e50;
+            
+            --tier1: #7f8c8d;
+            --tier2: #2ecc71;
+            --tier3: #3498db;
+            --tier4: #e74c3c;
+            --tier5: #f1c40f;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+            color: #f1c40f;
+            text-shadow: 0 0 10px rgba(241, 196, 15, 0.5);
+        }
+
+        .game-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            max-width: 1100px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .left-column {
+            flex: 1;
+            min-width: 320px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: var(--panel-color);
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .right-column {
+            flex: 1.2;
+            min-width: 360px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        #result-board {
+            width: 100%;
+            background: #0f0f1a;
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+            min-height: 55px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+        }
+        .result-win { border-color: var(--green) !important; color: var(--green); background: rgba(46, 204, 113, 0.1) !important; }
+        .result-lose { border-color: var(--red) !important; color: var(--red); background: rgba(231, 76, 60, 0.1) !important; }
+        .result-stage { border-color: #f1c40f !important; color: #f1c40f; background: rgba(241, 196, 15, 0.1) !important; }
+
+        .wheel-container {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            margin-bottom: 20px;
+        }
+
+        #wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 8px solid #34495e;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            transition: transform 4s cubic-bezier(0.1, 0.8, 0.1, 1);
+        }
+
+        .pointer {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-top: 24px solid #f1c40f;
+            z-index: 10;
+        }
+
+        .controls {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+
+        .bet-selector-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            flex: 1;
+            min-width: 50px;
+            padding: 8px 3px;
+            background: #2c3e50;
+            border: none;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .tab-btn.active { background: var(--accent-color); }
+
+        .slider-container {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .slider-container input { flex: 1; }
+
+        .current-bet-info {
+            text-align: center;
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+            color: #aaa;
+        }
+        #current-bet-amount { color: #f1c40f; font-weight: bold; }
+
+        .action-btns { display: flex; gap: 10px; }
+        .action-btns button {
+            flex: 1;
+            padding: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        #btn-cancel { background: #7f8c8d; color: white; }
+        #btn-start { background: var(--green); color: white; }
+        #btn-start:disabled, #btn-cancel:disabled { background: #34495e; cursor: not-allowed; }
+
+        .status-panel {
+            background: var(--panel-color);
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .stat-box {
+            background: rgba(255,255,255,0.03);
+            padding: 10px;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent-color);
+        }
+        .stat-box.highlight { border-left-color: #f1c40f; }
+
+        .stat-label { font-size: 0.8rem; color: #888; margin-bottom: 3px; }
+        .stat-value { font-size: 1.1rem; font-weight: bold; }
+
+        .graph-container {
+            background: #0f0f1a;
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        canvas { display: block; width: 100%; height: 160px; }
+
+        .bet-board-panel {
+            background: var(--panel-color);
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .bet-section-title {
+            font-size: 0.95rem;
+            color: #aaa;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+        }
+
+        .bet-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .bet-btn {
+            padding: 10px 4px;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 52px;
+            background: #34495e;
+        }
+
+        .bet-btn.bg-red { background: var(--red); }
+        .bet-btn.bg-black { background: var(--black); }
+        .bet-btn.bg-green { background: var(--green); }
+
+        .bet-chip {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #f1c40f;
+            color: #000;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 0.65rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border: 1px solid white;
+        }
+
+        .bet-amount-label {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.9);
+            margin-top: 3px;
+            background: rgba(0,0,0,0.5);
+            padding: 1px 4px;
+            border-radius: 3px;
+        }
+
+        .number-grid { grid-template-columns: repeat(6, 1fr); }
+
+        .overlay-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .ability-container {
+            display: flex;
+            gap: 15px;
+            max-width: 900px;
+            width: 100%;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .ability-card {
+            flex: 1;
+            min-width: 240px;
+            max-width: 280px;
+            background: #1f1f38;
+            border: 3px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .ability-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        }
+
+        .card-t1 { border-color: var(--tier1); }
+        .card-t2 { border-color: var(--tier2); }
+        .card-t3 { border-color: var(--tier3); }
+        .card-t4 { border-color: var(--tier4); }
+        .card-t5 { border-color: var(--tier5); animation: pulse 1.5s infinite alternate; }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 5px rgba(241,196,15,0.4); }
+            100% { box-shadow: 0 0 20px rgba(241,196,15,0.8); }
+        }
+
+        .tier-label { font-size: 0.8rem; font-weight: bold; text-transform: uppercase; margin-bottom: 10px; padding: 2px 8px; border-radius: 4px; display: inline-block; color: #fff;}
+        .lbl-t1 { background: var(--tier1); }
+        .lbl-t2 { background: var(--tier2); }
+        .lbl-t3 { background: var(--tier3); }
+        .lbl-t4 { background: var(--tier4); }
+        .lbl-t5 { background: #000; color: #f1c40f; border: 1px solid #f1c40f; }
+
+        .ability-desc { font-size: 0.95rem; line-height: 1.4; margin: 15px 0; color: #ddd; flex-grow: 1; }
+
+        .select-btn {
+            background: #2c3e50;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        #game-over-screen h2 { font-size: 3rem; color: var(--red); margin-bottom: 10px; }
+        #game-over-screen p { font-size: 1.2rem; margin-bottom: 20px; color: #ccc; }
+        #btn-restart { padding: 12px 30px; font-size: 1.2rem; background: #f1c40f; color: black; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+
+        .buff-status {
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 15px;
+            font-size: 0.8rem;
+            color: #aaa;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>プレミアム・ローグライト・ルーレット</h1>
+
+    <div class="game-container">
+        <div class="left-column">
+            <div id="result-board">チップをベットして「スタート」を押してください。</div>
+
+            <div class="wheel-container">
+                <div class="pointer"></div>
+                <canvas id="wheel" width="280" height="280"></canvas>
+            </div>
+
+            <div class="controls">
+                <div class="stat-label" style="margin-bottom: 5px;">💸 1タップあたりの賭け金を選択</div>
+                <div class="bet-selector-tabs">
+                    <button class="tab-btn" onclick="selectBetMode('any')">任意 (%)</button>
+                    <button class="tab-btn active" onclick="selectBetMode(10)">10</button>
+                    <button class="tab-btn" onclick="selectBetMode(100)">100</button>
+                    <button class="tab-btn" onclick="selectBetMode(1000)">1,000</button>
+                    <button class="tab-btn" onclick="selectBetMode(10000)">10,000</button>
+                    <button class="tab-btn" onclick="selectBetMode(100000)">100,000</button>
+                </div>
+
+                <div class="slider-container" id="slider-box">
+                    <input type="range" id="bet-percent" min="1" max="100" value="10" oninput="updateSliderLabel()">
+                    <span id="slider-val" style="font-weight:bold; width:40px; text-align:right;">10%</span>
+                </div>
+
+                <div class="current-bet-info">
+                    現在の上乗せ額: <span id="current-bet-amount">¥10</span>
+                </div>
+
+                <div class="action-btns">
+                    <button id="btn-cancel" onclick="cancelAllBets()">キャンセル</button>
+                    <button id="btn-start" onclick="spinWheel()">スタート</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-column">
+            <div class="status-panel">
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-label">現在の資産</div>
+                        <div class="stat-value" id="display-assets" style="color: #2ecc71;">¥1,000</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">現在の累計総ベット額</div>
+                        <div class="stat-value" id="display-total-bet">¥0</div>
+                    </div>
+                    <div class="stat-box highlight">
+                        <div class="stat-label">ノルマ支払い（次回）</div>
+                        <div class="stat-value" id="display-quota" style="color: #f1c40f;">¥500</div>
+                    </div>
+                    <div class="stat-box highlight">
+                        <div class="stat-label">支払いまでの残り猶予</div>
+                        <div class="stat-value" id="display-turns">5 ターン</div>
+                    </div>
+                    <div class="stat-box" style="border-left-color: #9b59b6;">
+                        <div class="stat-label">現在の含み益レート</div>
+                        <div class="stat-value" id="display-unrealized-rate">0.00%</div>
+                    </div>
+                    <div class="stat-box" style="border-left-color: #1abc9c;">
+                        <div class="stat-label">前ターンの含み益獲得</div>
+                        <div class="stat-value" id="display-unrealized-gain">¥0</div>
+                    </div>
+                </div>
+
+                <div class="graph-container">
+                    <canvas id="graphCanvas"></canvas>
+                </div>
+
+                <div class="buff-status" id="buff-list">
+                    【適用中のパッシブ効果】<br>
+                    倍率強化: 赤黒色ベット +0.0倍 | 初期3倍エリア +0.0倍 | 奇偶 +0.0倍 | 緑マス +0倍 | 単勝 +0.0倍<br>
+                    特殊能力: 損失軽減: 1.0倍 | 再始動確率: 0% | 基本ターン追加: +0
+                </div>
+            </div>
+
+            <div class="bet-board-panel">
+                <div class="bet-section-title">カラー・特殊ベット (初期2倍 / 初期3倍)</div>
+                <div class="bet-grid">
+                    <button class="bet-btn bg-red" onclick="placeBet('red')">🔴 赤 <span class="bet-amount-label" id="lbl-bet-red">¥0</span></button>
+                    <button class="bet-btn bg-black" onclick="placeBet('black')">⚫ 黒 <span class="bet-amount-label" id="lbl-bet-black">¥0</span></button>
+                    <button class="bet-btn" style="background:#8e44ad;" onclick="placeBet('odd')">奇数 <span class="bet-amount-label" id="lbl-bet-odd">¥0</span></button>
+                    <button class="bet-btn" style="background:#2980b9;" onclick="placeBet('even')">偶数 <span class="bet-amount-label" id="lbl-bet-even">¥0</span></button>
+                </div>
+                <div class="bet-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 25px;">
+                    <button class="bet-btn" style="background:#d35400;" onclick="placeBet('g1')">1 〜 6 <span class="bet-amount-label" id="lbl-bet-g1">¥0</span></button>
+                    <button class="bet-btn" style="background:#7f8c8d;" onclick="placeBet('g2')">7 〜 12 <span class="bet-amount-label" id="lbl-bet-g2">¥0</span></button>
+                    <button class="bet-btn" style="background:#16a085;" onclick="placeBet('g3')">13 〜 18 <span class="bet-amount-label" id="lbl-bet-g3">¥0</span></button>
+                </div>
+
+                <div class="bet-section-title">数字ダイレクトベット (初期18倍)</div>
+                <div class="bet-grid number-grid" id="number-bet-board"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="ability-screen" class="overlay-screen">
+        <h2 style="color:#f1c40f; font-size:2.2rem; margin:0;">ノルマクリア報酬！</h2>
+        <p style="color:#bbb; margin:5px 0 20px 0;">獲得するアビリティを1つ選択してください</p>
+        <div class="ability-container" id="ability-choices-box"></div>
+    </div>
+
+    <div id="game-over-screen" class="overlay-screen">
+        <h2>GAME OVER</h2>
+        <p id="game-over-reason">資産が尽きたか、目標金額に届きませんでした。</p>
+        <button id="btn-restart" onclick="initGame()">もう一度挑戦する</button>
+    </div>
+
+    <script>
+        const wheelLayout = [
+            { num: 0,  color: 'green' }, { num: 12, color: 'red' }, { num: 7,  color: 'black' },
+            { num: 14, color: 'red' },   { num: 3,  color: 'black' }, { num: 16, color: 'red' },
+            { num: 5,  color: 'black' }, { num: 18, color: 'red' },   { num: 1,  color: 'black' },
+            { num: 10, color: 'red' },   { num: 9,  color: 'black' }, { num: 2,  color: 'red' },
+            { num: 11, color: 'black' }, { num: 4,  color: 'red' },   { num: 13, color: 'black' },
+            { num: 6,  color: 'red' },   { num: 15, color: 'black' }, { num: 8,  color: 'red' },
+            { num: 17, color: 'black' }
+        ];
+
+        let assets = 1000;
+        let currentBetMode = 10;
+        let stageCount = 1; 
+        let baseMaxTurns = 5; 
+        let turnCounter = 5;
+        let totalBets = {};
+        let assetHistory = [];
+        let isSpinning = false;
+        let lastUnrealizedGain = 0;
+        let lastQuota = 0;
+
+        let buff_ColorMultiplier = 0.0;     
+        let buff_OddEvenMultiplier = 0.0;   
+        let buff_GreenMultiplier = 0;       
+        let buff_SingleMultiplier = 0.0;     
+        let buff_TripleMultiplier = 0.0;     
+        let buff_UnrealizedRate = 0.000;    
+
+        let buff_RespinChance = 0.0;        
+        let buff_LossRate = 1.0;            
+        let buff_BonusTurns = 0;            
+
+        const boardAreas = ['red', 'black', 'odd', 'even', 'g1', 'g2', 'g3'];
+        for(let i=0; i<=18; i++) { boardAreas.push(`num_${i}`); }
+
+        const abilityPool = [
+            { id: 't1_a', tier: 1, label: 'ティア１⚫', desc: '赤と黒の色ベット ＋0.1倍', effect: () => { buff_ColorMultiplier += 0.1; } },
+            { id: 't1_b', tier: 1, label: 'ティア１⚫', desc: '奇数と偶数の配当 ＋0.1倍', effect: () => { buff_OddEvenMultiplier += 0.1; } },
+            { id: 't1_c', tier: 1, label: 'ティア１⚫', desc: '緑マスの配当 ＋2倍', effect: () => { buff_GreenMultiplier += 2; } },
+            { id: 't1_d', tier: 1, label: 'ティア１⚫', desc: '資産 ＋2,000円を即時獲得', effect: () => { assets += 2000; } },
+            { id: 't1_e', tier: 1, label: 'ティア１⚫', desc: '1~18の単勝配当 ＋0.5倍', effect: () => { buff_SingleMultiplier += 0.5; } },
+            { id: 't1_f', tier: 1, label: 'ティア１⚫', desc: '初期3倍 ＋0.2倍', effect: () => { buff_TripleMultiplier += 0.2; } },
+            { id: 't1_g', tier: 1, label: 'ティア１⚫', desc: '含み益 ＋0.001 (0.1%)', effect: () => { buff_UnrealizedRate += 0.001; } },
+
+            { id: 't2_a', tier: 2, label: 'ティア２🟢', desc: '赤と黒の色ベット ＋0.2倍', effect: () => { buff_ColorMultiplier += 0.2; } },
+            { id: 't2_b', tier: 2, label: 'ティア２🟢', desc: '奇数と偶数の配当 ＋0.2倍', effect: () => { buff_OddEvenMultiplier += 0.2; } },
+            { id: 't2_c', tier: 2, label: 'ティア２🟢', desc: '緑マスの配当 ＋4倍', effect: () => { buff_GreenMultiplier += 4; } },
+            { id: 't2_d', tier: 2, label: 'ティア２🟢', desc: '資産 ＋4,000円を即時獲得', effect: () => { assets += 4000; } },
+            { id: 't2_e', tier: 2, label: 'ティア２🟢', desc: '1~18の単勝配当 ＋1.0倍', effect: () => { buff_SingleMultiplier += 1.0; } },
+            { id: 't2_f', tier: 2, label: 'ティア２🟢', desc: '初期3倍 ＋0.4倍', effect: () => { buff_TripleMultiplier += 0.4; } },
+            { id: 't2_g', tier: 2, label: 'ティア２🟢', desc: '含み益 ＋0.005 (0.5%)', effect: () => { buff_UnrealizedRate += 0.005; } },
+
+            { id: 't3_a', tier: 3, label: 'ティア３🔵', desc: '赤と黒の色ベット ＋0.4倍', effect: () => { buff_ColorMultiplier += 0.4; } },
+            { id: 't3_b', tier: 3, label: 'ティア３🔵', desc: '奇数と偶数の配当 ＋0.4倍', effect: () => { buff_OddEvenMultiplier += 0.4; } },
+            { id: 't3_c', tier: 3, label: 'ティア３🔵', desc: '緑マスの配当 ＋8倍', effect: () => { buff_GreenMultiplier += 8; } },
+            { id: 't3_d', tier: 3, label: 'ティア３🔵', desc: '資産 ＋20,000円を即時獲得', effect: () => { assets += 20000; } },
+            { id: 't3_e', tier: 3, label: 'ティア３🔵', desc: '1~18の単勝配当 ＋2.0倍', effect: () => { buff_SingleMultiplier += 2.0; } },
+            { id: 't3_f', tier: 3, label: 'ティア３🔵', desc: '初期3倍 ＋0.6倍', effect: () => { buff_TripleMultiplier += 0.6; } },
+            { id: 't3_g', tier: 3, label: 'ティア３🔵', desc: '含み益 ＋0.007 (0.7%)', effect: () => { buff_UnrealizedRate += 0.007; } },
+
+            { id: 't4_a', tier: 4, label: 'ティア４🔴', desc: '赤と黒の色ベット ＋0.8倍', effect: () => { buff_ColorMultiplier += 0.8; } },
+            { id: 't4_b', tier: 4, label: 'ティア４🔴', desc: '奇数と偶数の配当 ＋0.8倍', effect: () => { buff_OddEvenMultiplier += 0.8; } },
+            { id: 't4_c', tier: 4, label: 'ティア４🔴', desc: '緑マスの配当 ＋16倍', effect: () => { buff_GreenMultiplier += 16; } },
+            { id: 't4_d', tier: 4, label: 'ティア４🔴', desc: '資産 ＋60,000円を即時獲得', effect: () => { assets += 60000; } },
+            { id: 't4_e', tier: 4, label: 'ティア４🔴', desc: '1~18の単勝配当 ＋2.5倍', effect: () => { buff_SingleMultiplier += 2.5; } },
+            { id: 't4_f', tier: 4, label: 'ティア４🔴', desc: '初期3倍 ＋0.9倍', effect: () => { buff_TripleMultiplier += 0.9; } },
+            { id: 't4_g', tier: 4, label: 'ティア４🔴', desc: '含み益 ＋0.010 (1.0%)', effect: () => { buff_UnrealizedRate += 0.010; } },
+
+            { id: 't5_a', tier: 5, label: 'トリッキー⚪', desc: 'たまにもう一回追加スピンできる (確率+10%)', effect: () => { buff_RespinChance += 0.10; } },
+            { id: 't5_b', tier: 5, label: 'トリッキー⚪', desc: '外した時に失う金額が 0.8倍 に抑えられる', effect: () => { buff_LossRate *= 0.8; } },
+            { id: 't5_c', tier: 5, label: 'トリッキー⚪', desc: 'ノルマ支払いまでの基本猶予ターン数が ＋1 される', effect: () => { buff_BonusTurns += 1; } }
+        ];
+
+        function calculateQuota(n) {
+            let currentQ = 0;
+            for (let i = 1; i <= n; i++) {
+                currentQ += 100 * (i + 4);
+            }
+            return currentQ;
+        }
+
+        function initGame() {
+            assets = 1000;
+            stageCount = 1;
+            buff_BonusTurns = 0;
+            turnCounter = baseMaxTurns + buff_BonusTurns;
+            assetHistory = [1000];
+            isSpinning = false;
+            lastUnrealizedGain = 0;
+            lastQuota = 0;
+
+            buff_ColorMultiplier = 0.0;
+            buff_OddEvenMultiplier = 0.0;
+            buff_GreenMultiplier = 0;
+            buff_SingleMultiplier = 0.0;
+            buff_TripleMultiplier = 0.0;
+            buff_UnrealizedRate = 0.000;
+            buff_RespinChance = 0.0;
+            buff_LossRate = 1.0;
+
+            document.getElementById('game-over-screen').style.display = 'none';
+            document.getElementById('ability-screen').style.display = 'none';
+            document.getElementById('result-board').className = '';
+            document.getElementById('result-board').innerText = 'チップをベットして「スタート」を押してください。';
+            cancelAllBets();
+            updateUI();
+            drawGraph();
+        }
+
+        function buildNumberBoard() {
+            const board = document.getElementById('number-bet-board');
+            board.innerHTML = '';
+            wheelLayout.slice().sort((a,b) => a.num - b.num).forEach(item => {
+                const btn = document.createElement('button');
+                btn.className = `bet-btn bg-${item.color}`;
+                btn.onclick = () => placeBet(`num_${item.num}`);
+                let colorMark = item.num === 0 ? '🟢' : (item.color === 'red' ? '🔴' : '⚫');
+                btn.innerHTML = `${colorMark} ${item.num} <span class="bet-amount-label" id="lbl-bet-num_${item.num}">¥0</span>`;
+                board.appendChild(btn);
+            });
+        }
+
+        function selectBetMode(mode) {
+            if(isSpinning) return;
+            currentBetMode = mode;
+            const tabs = document.querySelectorAll('.tab-btn');
+            tabs.forEach(t => t.classList.remove('active'));
+            const sliderBox = document.getElementById('slider-box');
+            if(mode === 'any') {
+                sliderBox.style.display = 'flex';
+                event.target.classList.add('active');
+            } else {
+                sliderBox.style.display = 'none';
+                tabs.forEach(t => { if(t.innerText.replace(/,/g, '') == mode) t.classList.add('active'); });
+            }
+            updateBetAmountInfo();
+        }
+
+        function updateSliderLabel() {
+            const val = document.getElementById('bet-percent').value;
+            document.getElementById('slider-val').innerText = `${val}%`;
+            updateBetAmountInfo();
+        }
+
+        function getClickBetAmount() {
+            if(currentBetMode === 'any') {
+                const percent = parseInt(document.getElementById('bet-percent').value);
+                return Math.floor(assets * (percent / 100));
+            }
+            return currentBetMode;
+        }
+
+        function updateBetAmountInfo() {
+            const amt = getClickBetAmount();
+            document.getElementById('current-bet-amount').innerText = `¥${amt.toLocaleString()}`;
+        }
+
+        function placeBet(area) {
+            if(isSpinning) return;
+            const betAmt = getClickBetAmount();
+            if(betAmt <= 0) return;
+            const currentTotalPlaced = Object.values(totalBets).reduce((a,b)=>a+b, 0);
+            if(currentTotalPlaced + betAmt > assets) {
+                const remaining = assets - currentTotalPlaced;
+                if(remaining > 0) totalBets[area] = (totalBets[area] || 0) + remaining;
+            } else {
+                totalBets[area] = (totalBets[area] || 0) + betAmt;
+            }
+            updateUI();
+        }
+
+        function cancelAllBets() {
+            if(isSpinning) return;
+            boardAreas.forEach(area => { totalBets[area] = 0; });
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('display-assets').innerText = `¥${Math.floor(assets).toLocaleString()}`;
+            const currentTotalPlaced = Object.values(totalBets).reduce((a,b)=>a+b, 0);
+            document.getElementById('display-total-bet').innerText = `¥${currentTotalPlaced.toLocaleString()}`;
+            
+            const quota = lastQuota + 100 * (stageCount + 4);
+            document.getElementById('display-quota').innerText = `¥${quota.toLocaleString()}`;
+            document.getElementById('display-turns').innerText = `${turnCounter} ターン`;
+            document.getElementById('display-unrealized-rate').innerText = `${(buff_UnrealizedRate * 100).toFixed(1)}%`;
+            document.getElementById('display-unrealized-gain').innerText = `¥${Math.floor(lastUnrealizedGain).toLocaleString()}`;
+
+            boardAreas.forEach(area => {
+                const amt = totalBets[area] || 0;
+                const lbl = document.getElementById(`lbl-bet-${area}`);
+                if(lbl) {
+                    lbl.innerText = `¥${amt.toLocaleString()}`;
+                    let parent = lbl.parentElement;
+                    let badge = parent.querySelector('.bet-chip');
+                    if(amt > 0) {
+                        if(!badge) { parent.appendChild(badge = document.createElement('span')); badge.className = 'bet-chip'; }
+                        badge.innerText = '✓';
+                    } else if(badge) { badge.remove(); }
+                }
+            });
+            updateBuffPanel();
+            updateBetAmountInfo();
+        }
+
+        function updateBuffPanel() {
+            document.getElementById('buff-list').innerHTML = `
+                【適用中のパッシブ効果】<br>
+                赤黒色ベット倍率: +${buff_ColorMultiplier.toFixed(1)}倍 | 奇偶倍率: +${buff_OddEvenMultiplier.toFixed(1)}倍 | 
+                初期3倍エリア倍率: +${buff_TripleMultiplier.toFixed(1)}倍 | 緑マス倍率: +${buff_GreenMultiplier}倍 | 1~18単勝倍率: +${buff_SingleMultiplier.toFixed(1)}倍<br>
+                含み益レート: ${(buff_UnrealizedRate*100).toFixed(1)}% | 
+                トリッキー: 損失倍率:${buff_LossRate.toFixed(2)}倍 / 再スピン:${(buff_RespinChance*100).toFixed(0)}% / 猶予延長:+${buff_BonusTurns}
+            `;
+        }
+
+        function drawWheel() {
+            const canvas = document.getElementById('wheel');
+            const ctx = canvas.getContext('2d');
+            const numSlices = wheelLayout.length;
+            const sliceAngle = (2 * Math.PI) / numSlices;
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const r = canvas.width / 2 - 10;
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+
+            for(let i=0; i<numSlices; i++) {
+                const item = wheelLayout[i];
+                const startAngle = -Math.PI/2 + i * sliceAngle;
+                const endAngle = startAngle + sliceAngle;
+
+                ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r, startAngle, endAngle); ctx.closePath();
+                if(item.color === 'green') ctx.fillStyle = '#2ecc71';
+                else if(item.color === 'red') ctx.fillStyle = '#e74c3c';
+                else ctx.fillStyle = '#2c3e50';
+                ctx.fill();
+                ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.stroke();
+
+                ctx.save(); ctx.translate(cx, cy); ctx.rotate(startAngle + sliceAngle / 2);
+                ctx.textAlign = "right"; ctx.fillStyle = "#ffffff"; ctx.font = "bold 13px Arial";
+                ctx.fillText(item.num, r - 15, 5); ctx.restore();
+            }
+            ctx.beginPath(); ctx.arc(cx, cy, r * 0.4, 0, 2*Math.PI); ctx.fillStyle = '#1a1a2e'; ctx.fill();
+            ctx.strokeStyle = '#f1c40f'; ctx.lineWidth = 2; ctx.stroke();
+        }
+
+        function spinWheel() {
+            if(isSpinning) return;
+            const totalBetAmt = Object.values(totalBets).reduce((a,b)=>a+b, 0);
+            if(totalBetAmt <= 0) {
+                const board = document.getElementById('result-board');
+                board.className = ''; board.innerText = 'どこかにチップをベットしてください。';
+                return;
+            }
+
+            isSpinning = true;
+            document.getElementById('btn-start').disabled = true;
+            document.getElementById('btn-cancel').disabled = true;
+
+            assets -= totalBetAmt;
+            updateUI();
+
+            executeSpinLogic(totalBetAmt);
+        }
+
+        function executeSpinLogic(originalTotalBet) {
+            const winningIndex = Math.floor(Math.random() * wheelLayout.length);
+            const winningItem = wheelLayout[winningIndex];
+
+            const sliceAngle = 360 / wheelLayout.length;
+            const targetAngle = 360 - (winningIndex * sliceAngle) - (sliceAngle / 2);
+            const finalRotation = (5 * 360) + targetAngle;
+
+            const wheelCanvas = document.getElementById('wheel');
+            wheelCanvas.style.transition = 'transform 4s cubic-bezier(0.1, 0.8, 0.1, 1)';
+            wheelCanvas.style.transform = `rotate(${finalRotation}deg)`;
+
+            const board = document.getElementById('result-board');
+            if(board.classList.contains('respin-active')) {
+                board.innerText = '✨ トリッキー効果発動！ボーナス再スピン中...';
+            } else {
+                board.className = ''; board.innerText = 'ルーレット回転中...';
+            }
+
+            setTimeout(() => {
+                wheelCanvas.style.transition = 'none';
+                wheelCanvas.style.transform = `rotate(${targetAngle}deg)`;
+                wheelCanvas.offsetHeight;
+                wheelCanvas.style.transition = 'transform 4s cubic-bezier(0.1, 0.8, 0.1, 1)';
+
+                evaluateResults(winningItem, originalTotalBet);
+            }, 4000);
+        }
+
+        function evaluateResults(winItem, originalTotalBet) {
+            let roundPayout = 0;
+            const n = winItem.num;
+            const c = winItem.color;
+
+            const colorMult = 2 + buff_ColorMultiplier;
+            if(c === 'red')   roundPayout += (totalBets['red'] || 0) * colorMult;
+            if(c === 'black') roundPayout += (totalBets['black'] || 0) * colorMult;
+
+            const oddEvenMult = 2 + buff_OddEvenMultiplier;
+            if(n !== 0) {
+                if(n % 2 !== 0) roundPayout += (totalBets['odd'] || 0) * oddEvenMult;
+                if(n % 2 === 0) roundPayout += (totalBets['even'] || 0) * oddEvenMult;
+            }
+
+            const tripleMult = 3 + buff_TripleMultiplier;
+            if(n >= 1 && n <= 6)   roundPayout += (totalBets['g1'] || 0) * tripleMult;
+            if(n >= 7 && n <= 12)  roundPayout += (totalBets['g2'] || 0) * tripleMult;
+            if(n >= 13 && n <= 18) roundPayout += (totalBets['g3'] || 0) * tripleMult;
+
+            if(n === 0) {
+                roundPayout += (totalBets['num_0'] || 0) * (18 + buff_GreenMultiplier);
+            } else {
+                roundPayout += (totalBets[`num_${n}`] || 0) * (18 + buff_SingleMultiplier);
+            }
+
+            let lossReductionGain = 0;
+            if(roundPayout === 0 && buff_LossRate < 1.0) {
+                lossReductionGain = originalTotalBet * (1 - buff_LossRate);
+                roundPayout += lossReductionGain;
+            }
+
+            assets += roundPayout;
+
+            lastUnrealizedGain = assets * buff_UnrealizedRate;
+            assets += lastUnrealizedGain;
+            
+            const board = document.getElementById('result-board');
+            let colorMark = n === 0 ? '🟢' : (c === 'red' ? '🔴' : '⚫');
+            let resText = `出目: ${colorMark} ${n} ── `;
+
+            if(roundPayout > lossReductionGain) {
+                board.className = 'result-win';
+                resText += `🎯 当選！ +¥${Math.floor(roundPayout).toLocaleString()}`;
+            } else if(lossReductionGain > 0) {
+                board.className = 'result-win';
+                resText += `🛡️ トリッキーセーブ発動！ 損失を抑えて ¥${Math.floor(lossReductionGain).toLocaleString()} 補填`;
+            } else {
+                board.className = 'result-lose';
+                resText += `❌ ハズレ...`;
+            }
+
+            if(lastUnrealizedGain > 0) {
+                resText += ` (含み益ボーナス: +¥${Math.floor(lastUnrealizedGain).toLocaleString()})`;
+            }
+            board.innerText = resText;
+
+            if(!board.classList.contains('respin-active') && Math.random() < buff_RespinChance) {
+                setTimeout(() => {
+                    board.classList.add('respin-active');
+                    executeSpinLogic(originalTotalBet);
+                }, 1500);
+                return;
+            }
+
+            board.classList.remove('respin-active');
+            turnCounter--;
+
+            if(turnCounter <= 0) {
+                const requiredQuota = lastQuota + 100 * (stageCount + 4);
+                if(assets < requiredQuota) {
+                    endGame(`目標金額に到達できませんでした (ノルマ: ¥${requiredQuota.toLocaleString()} / 資産額: ¥${Math.floor(assets).toLocaleString()})`);
+                    return;
+                } else {
+                    lastQuota = requiredQuota;
+                    stageCount++;
+                    turnCounter = baseMaxTurns + buff_BonusTurns;
+                    assetHistory.push(assets);
+                    drawGraph();
+                    triggerAbilitySelect();
+                    return;
+                }
+            }
+
+            if(assets <= 0) { endGame("資産がすべて尽きました（破産）。"); return; }
+
+            assetHistory.push(assets);
+            drawGraph();
+
+            boardAreas.forEach(area => { totalBets[area] = 0; });
+            isSpinning = false;
+            document.getElementById('btn-start').disabled = false;
+            document.getElementById('btn-cancel').disabled = false;
+            updateUI();
+        }
+
+        function triggerAbilitySelect() {
+            const choicesBox = document.getElementById('ability-choices-box');
+            choicesBox.innerHTML = '';
+
+            let selectedAbilities = [];
+            let tempPool = [...abilityPool];
+
+            for(let i=0; i<3; i++) {
+                if(tempPool.length === 0) break;
+                
+                const r = Math.random();
+                let targetTier = 1;
+                if (r < 0.60) targetTier = 1;
+                else if (r < 0.80) targetTier = 2;
+                else if (r < 0.95) targetTier = 3;
+                else if (r < 0.99) targetTier = 4;
+                else targetTier = 5;
+
+                let matchItems = tempPool.filter(item => item.tier === targetTier);
+                if(matchItems.length === 0) { matchItems = tempPool; }
+
+                const pickIndex = Math.floor(Math.random() * matchItems.length);
+                const pickedItem = matchItems[pickIndex];
+
+                selectedAbilities.push(pickedItem);
+                tempPool = tempPool.filter(item => item.id !== pickedItem.id);
+            }
+
+            selectedAbilities.forEach(ab => {
+                const card = document.createElement('div');
+                card.className = `ability-card card-t${ab.tier}`;
+                let tierText = ab.label;
+                card.innerHTML = `
+                    <div>
+                        <span class="tier-label lbl-t${ab.tier}">${tierText}</span>
+                        <div class="ability-desc">${ab.desc}</div>
+                    </div>
+                    <button class="select-btn">獲得する</button>
+                `;
+
+                card.onclick = () => {
+                    ab.effect();
+                    document.getElementById('ability-screen').style.display = 'none';
+                    
+                    const board = document.getElementById('result-board');
+                    board.className = 'result-stage';
+                    board.innerText = `🎁 アビリティ [${ab.desc}] を習得！第${stageCount}期ノルマに挑戦中。`;
+
+                    boardAreas.forEach(area => { totalBets[area] = 0; });
+                    isSpinning = false;
+                    document.getElementById('btn-start').disabled = false;
+                    document.getElementById('btn-cancel').disabled = false;
+                    updateUI();
+                };
+                choicesBox.appendChild(card);
+            });
+            document.getElementById('ability-screen').style.display = 'flex';
+        }
+
+        function endGame(reason) {
+            document.getElementById('game-over-reason').innerText = reason;
+            document.getElementById('game-over-screen').style.display = 'flex';
+        }
+
+        function drawGraph() {
+            const canvas = document.getElementById('graphCanvas');
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr; canvas.height = 160 * dpr;
+            ctx.scale(dpr, dpr);
+
+            const w = rect.width; const h = 160;
+            const paddingLeft = 60; const paddingBottom = 25;
+            const paddingTop = 15; const paddingRight = 15;
+
+            ctx.clearRect(0,0,w,h);
+            ctx.fillStyle = '#0f0f1a'; ctx.fillRect(0,0,w,h);
+
+            if(assetHistory.length === 0) return;
+
+            let maxVal = Math.max(...assetHistory, 1000);
+            let minVal = Math.min(...assetHistory, 0);
+            if(maxVal === minVal) { maxVal += 500; minVal -= 500; }
+            const valRange = maxVal - minVal;
+            const graphMax = maxVal + valRange * 0.1;
+            const graphMin = Math.max(0, minVal - valRange * 0.1);
+            const graphRange = graphMax - graphMin;
+
+            function getX(index) {
+                if(assetHistory.length <= 1) return paddingLeft;
+                return paddingLeft + (index / (assetHistory.length - 1)) * (w - paddingLeft - paddingRight);
+            }
+            function getY(value) { return h - paddingBottom - ((value - graphMin) / graphRange) * (h - paddingTop - paddingBottom); }
+
+            const gridLines = 4;
+            ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+            ctx.fillStyle = '#888'; ctx.font = '10px Arial'; ctx.textAlign = 'right';
+
+            for(let i=0; i<=gridLines; i++) {
+                const val = graphMin + (graphRange * (i / gridLines));
+                const yPos = getY(val);
+                ctx.beginPath(); ctx.moveTo(paddingLeft, yPos); ctx.lineTo(w - paddingRight, yPos); ctx.stroke();
+                ctx.fillText(`¥${Math.floor(val).toLocaleString()}`, paddingLeft - 8, yPos + 4);
+            }
+
+            ctx.beginPath(); ctx.lineWidth = 2.5; ctx.strokeStyle = '#2ecc71';
+            for(let i=0; i<assetHistory.length; i++) {
+                if(i === 0) ctx.moveTo(getX(i), getY(assetHistory[i]));
+                else ctx.lineTo(getX(i), getY(assetHistory[i]));
+            }
+            ctx.stroke();
+
+            for(let i=0; i<assetHistory.length; i++) {
+                ctx.beginPath(); ctx.arc(getX(i), getY(assetHistory[i]), 3.5, 0, 2*Math.PI);
+                ctx.fillStyle = '#fff'; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = '#2ecc71'; ctx.stroke();
+            }
+
+            ctx.fillStyle = '#666'; ctx.textAlign = 'center';
+            ctx.fillText("初期", getX(0), h - 8);
+            if(assetHistory.length > 1) { ctx.fillText(`第${assetHistory.length - 1}期クリア`, getX(assetHistory.length - 1), h - 8); }
+        }
+
+        buildNumberBoard();
+        drawWheel();
+        initGame();
+        window.addEventListener('resize', drawGraph);
+    </script>
+</body>
+</html>
